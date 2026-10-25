@@ -1,0 +1,26 @@
+let
+    // Replace this only once with the project folder path.
+    SourceFolder = "C:\YOUR_PATH\Automated_MIS_KPI_Monitoring_System\data\monthly_inputs",
+    Source = Folder.Files(SourceFolder),
+    KeepExcel = Table.SelectRows(Source, each [Extension] = ".xlsx" and not Text.StartsWith([Name], "~$")),
+    AddWorkbook = Table.AddColumn(KeepExcel, "Workbook", each Excel.Workbook([Content], true)),
+    ExpandWorkbook = Table.ExpandTableColumn(AddWorkbook, "Workbook", {"Data", "Kind", "Item"}, {"Data", "Kind", "Item"}),
+    KeepTablesAndSheets = Table.SelectRows(ExpandWorkbook, each [Kind] = "Sheet" or [Kind] = "Table"),
+    Combined = Table.Combine(KeepTablesAndSheets[Data]),
+    RequiredColumns = {"Record_ID","Record_Date","Department","Region","Channel","Category","Customer_Segment","Quantity","Sales","Cost","Profit","KPI_Target","KPI_Actual","SLA_Target_Hours","TAT_Hours","SLA_Breach","KPI_Below_Target","Missing_Data_Flag","Duplicate_Flag","Volume_Anomaly_Flag","Exception_Type","Status"},
+    KeepRequired = Table.SelectColumns(Combined, RequiredColumns, MissingField.UseNull),
+    Types = Table.TransformColumnTypes(KeepRequired, {
+        {"Record_ID", type text}, {"Record_Date", type date}, {"Department", type text},
+        {"Region", type text}, {"Channel", type text}, {"Category", type text},
+        {"Customer_Segment", type text}, {"Quantity", Int64.Type}, {"Sales", type number},
+        {"Cost", type number}, {"Profit", type number}, {"KPI_Target", type number},
+        {"KPI_Actual", type number}, {"SLA_Target_Hours", Int64.Type}, {"TAT_Hours", Int64.Type},
+        {"SLA_Breach", type text}, {"KPI_Below_Target", type text}, {"Missing_Data_Flag", type text},
+        {"Duplicate_Flag", type text}, {"Volume_Anomaly_Flag", type text}, {"Exception_Type", type text}, {"Status", type text}
+    }),
+    AddMonth = Table.AddColumn(Types, "Month", each Date.ToText([Record_Date], "yyyy-MM"), type text),
+    AddCalculatedProfit = Table.AddColumn(AddMonth, "Calculated_Profit", each [Sales] - [Cost], type number),
+    AddSLACheck = Table.AddColumn(AddCalculatedProfit, "SLA_Breach_Check", each if [TAT_Hours] > [SLA_Target_Hours] then "Yes" else "No", type text),
+    AddKPICheck = Table.AddColumn(AddSLACheck, "KPI_Below_Target_Check", each if [KPI_Actual] < [KPI_Target] then "Yes" else "No", type text)
+in
+    AddKPICheck

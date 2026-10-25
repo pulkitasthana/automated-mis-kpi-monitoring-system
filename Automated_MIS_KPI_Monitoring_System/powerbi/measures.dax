@@ -1,0 +1,25 @@
+Total Sales = SUM(fact_mis[Sales])
+Total Profit = SUM(fact_mis[Profit])
+Profit Margin % = DIVIDE([Total Profit], [Total Sales], 0)
+Total Records = COUNTROWS(fact_mis)
+Exception Records = CALCULATE([Total Records], fact_mis[Status] = "Exception")
+Exception Rate % = DIVIDE([Exception Records], [Total Records], 0)
+SLA Breaches = CALCULATE([Total Records], fact_mis[SLA_Breach] = "Yes")
+SLA Compliance % = 1 - DIVIDE([SLA Breaches], [Total Records], 0)
+KPI Below Target = CALCULATE([Total Records], fact_mis[KPI_Below_Target] = "Yes")
+Missing Data = CALCULATE([Total Records], fact_mis[Missing_Data_Flag] = "Yes")
+Duplicate Records = CALCULATE([Total Records], fact_mis[Duplicate_Flag] = "Yes")
+Volume Anomalies = CALCULATE([Total Records], fact_mis[Volume_Anomaly_Flag] = "Yes")
+Avg TAT Hours = AVERAGE(fact_mis[TAT_Hours])
+Avg KPI Actual = AVERAGE(fact_mis[KPI_Actual])
+Avg KPI Target = AVERAGE(fact_mis[KPI_Target])
+Target Achievement % = DIVIDE([Avg KPI Actual], [Avg KPI Target], 0)
+
+Exception Rate % (Display) = [Exception Rate %]
+SLA Compliance % (Display) = [SLA Compliance %]
+Target Achievement % (Display) = [Target Achievement %]
+
+Sales MoM % =
+VAR CurrentSales = [Total Sales]
+VAR PreviousSales = CALCULATE([Total Sales], DATEADD('Calendar'[Date], -1, MONTH))
+RETURN DIVIDE(CurrentSales - PreviousSales, PreviousSales, 0)
